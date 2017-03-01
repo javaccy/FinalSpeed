@@ -1,8 +1,8 @@
 // Copyright (c) 2015 D1SM.net
 package net.fs.server;
 
-import com.alibaba.fastjson.JSONObject;
-
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import net.fs.client.Pipe;
 import net.fs.rudp.ConnectionProcessor;
 import net.fs.rudp.ConnectionUDP;
@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 public class MapTunnelProcessor implements ConnectionProcessor{
@@ -28,6 +30,7 @@ public class MapTunnelProcessor implements ConnectionProcessor{
 
 	ConnectionUDP conn;
 
+	Gson gson = new Gson();
 
 	UDPInputStream  tis;
 
@@ -57,15 +60,15 @@ public class MapTunnelProcessor implements ConnectionProcessor{
 		try {
 			headData = tis.read2();
 			String hs=new String(headData,"utf-8");
-			JSONObject requestJSon=JSONObject.parseObject(hs);
-			final int dstPort=requestJSon.getIntValue("dst_port");
+			Map<String,String> requestJSon=gson.fromJson(hs,new TypeToken<Map<String,String>>(){}.getType());
+			final int dstPort=Integer.parseInt(requestJSon.get("dst_port"));
 			String message="";
-			JSONObject responeJSon=new JSONObject();
+			Map<String,String> responeJSon=new LinkedHashMap<String, String>();
 			int code=Constant.code_failed;			
 			code=Constant.code_success;
-			responeJSon.put("code", code);
+			responeJSon.put("code", code+"");
 			responeJSon.put("message", message);
-			byte[] responeData=responeJSon.toJSONString().getBytes("utf-8");
+			byte[] responeData=gson.toJson(requestJSon).getBytes("utf-8");
 			tos.write(responeData, 0, responeData.length);
 			if(code!=Constant.code_success){
 				close();

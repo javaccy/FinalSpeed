@@ -5,9 +5,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Random;
 
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import net.fs.rudp.ClientProcessorInterface;
 import net.fs.rudp.ConnectionUDP;
 import net.fs.rudp.Constant;
@@ -21,6 +25,8 @@ public class PortMapProcess implements ClientProcessorInterface{
 	Random ran=new Random();
 
 	UDPInputStream  tis;
+
+	private Gson gson = new Gson();
 
 	UDPOutputStream tos;
 
@@ -55,10 +61,10 @@ public class PortMapProcess implements ClientProcessorInterface{
 			tis=conn.uis;
 			tos=conn.uos;
 
-			JSONObject requestJson=new JSONObject();
+			Map<String,String> requestJson=new LinkedHashMap();
 			requestJson.put("dst_address", dstAddress);
-			requestJson.put("dst_port", dstPort);
-			byte[] requestData=requestJson.toJSONString().getBytes("utf-8");
+			requestJson.put("dst_port",dstPort+"");
+			byte[] requestData=gson.toJson(requestJson).getBytes("utf-8");
 			
 			tos.write(requestData, 0, requestData.length);
 
@@ -70,9 +76,9 @@ public class PortMapProcess implements ClientProcessorInterface{
 			byte[] responeData=tis.read2();
 
 			String hs=new String(responeData,"utf-8");
-			JSONObject responeJSon=JSONObject.parseObject(hs);
-			int code=responeJSon.getIntValue("code");
-			String message=responeJSon.getString("message");
+			Map<String,String> responeJSon= gson.fromJson(hs,new TypeToken<Map<String,String>>(){}.getType());
+			int code=Integer.parseInt(responeJSon.get("code"));
+			String message=responeJSon.get("message");
 			String uimessage="";
 			if(code==Constant.code_success){
 

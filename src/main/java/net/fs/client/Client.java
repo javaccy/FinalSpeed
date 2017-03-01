@@ -7,8 +7,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import net.fs.rudp.Route;
 import net.fs.utils.LogOutputStream;
 import net.fs.utils.MLog;
@@ -28,8 +31,6 @@ public class Client {
 
     public static Client ui;
 
-    MapRuleListModel model;
-
     Exception capException = null;
     boolean b1 = false;
 
@@ -38,8 +39,6 @@ public class Client {
     String updateUrl;
     
     boolean min=false;
-    
-    LogFrame logFrame;
     
     LogOutputStream los;
     
@@ -62,7 +61,6 @@ public class Client {
         loadConfig();
         Route.localDownloadSpeed=config.downloadSpeed;
         Route.localUploadSpeed=config.uploadSpeed;
-        model = new MapRuleListModel();
 
         boolean tcpEnvSuccess=true;
 
@@ -115,41 +113,52 @@ public class Client {
     }
 
     ClientConfig loadConfig() {
+        Gson gson = new Gson();
         ClientConfig cfg = new ClientConfig();
         if (!new File(configFilePath).exists()) {
-            JSONObject json = new JSONObject();
+            Map map = new HashMap<String,String>();
             try {
-                saveFile(json.toJSONString().getBytes(), configFilePath);
+                saveFile(gson.toJson(map).getBytes(), configFilePath);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         try {
             String content = readFileUtf8(configFilePath);
-            JSONObject json = JSONObject.parseObject(content);
-            cfg.setServerAddress(json.getString("server_address"));
-            cfg.setServerPort(json.getIntValue("server_port"));
-            cfg.setRemotePort(json.getIntValue("remote_port"));
-            cfg.setRemoteAddress(json.getString("remote_address"));
+
+            Map<String,String> json = gson.fromJson(content,   new TypeToken<Map<String,String>>() {
+            }.getType());
+            cfg.setServerAddress(json.get("server_address").toString());
+            cfg.setServerPort(Integer.parseInt(json.get("server_port")));
+            cfg.setRemotePort(parseInt("remote_port",json));
+            cfg.setRemoteAddress(json.get("remote_address"));
             if (json.containsKey("direct_cn")) {
-                cfg.setDirect_cn(json.getBooleanValue("direct_cn"));
+                cfg.setDirect_cn(Boolean.parseBoolean(json.get("direct_cn")));
             }
-            cfg.setDownloadSpeed(json.getIntValue("download_speed"));
-            cfg.setUploadSpeed(json.getIntValue("upload_speed"));
+            cfg.setDownloadSpeed(Integer.parseInt(json.get("download_speed")));
+            cfg.setUploadSpeed(Integer.parseInt(json.get("upload_speed")));
             if (json.containsKey("socks5_port")) {
-                cfg.setSocks5Port(json.getIntValue("socks5_port"));
+                cfg.setSocks5Port(Integer.parseInt(json.get("socks5_port")));
             }
             if (json.containsKey("protocal")) {
-                cfg.setProtocal(json.getString("protocal"));
+                cfg.setProtocal(json.get("protocal"));
             }
             if (json.containsKey("auto_start")) {
-                cfg.setAutoStart(json.getBooleanValue("auto_start"));
+                cfg.setAutoStart(Boolean.parseBoolean(json.get("auto_start")));
             }
             config = cfg;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return cfg;
+    }
+
+    public static int parseInt(String key,Map<String,String> map){
+        try {
+            return Integer.parseInt(map.get(key));
+        }catch (Exception e){
+            return 0;
+        }
     }
 
 
