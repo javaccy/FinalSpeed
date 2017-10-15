@@ -1,0 +1,9 @@
+{
+    "map_list": [
+        {
+            "dst_port":8333, 
+            "listen_port":8985, 
+            "name": "ss"
+        }
+    ]
+}
